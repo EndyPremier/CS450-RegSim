@@ -1,7 +1,7 @@
 # Registry Machine Simulator
 
 **Term:** Senior Fall 2018  
-**Course:** CS450 - Higher Programming Languages 
+**Course:** CS450 - Higher Programming Languages  
 **Date:** Nov - Dec 2018  
 **Tool:** SSH  
 **Language:** Scheme  
