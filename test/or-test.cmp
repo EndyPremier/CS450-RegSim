@@ -1,0 +1,106 @@
+((env continue)
+ (env proc argl unev continue temp1 temp2 val)
+ (val)
+ (
+  (assign val (const #f))
+  (test (op false?) (reg val))
+  (branch (label false-branch2))
+ true-branch1
+  (assign val (const #f))
+  (goto (reg continue))
+ false-branch2
+  (save continue)
+  (save env)
+  (assign proc (op lookup-variable-value) (const =) (reg env))
+  (assign val (const 2))
+  (assign argl (op list) (reg val))
+  (assign val (const 1))
+  (assign argl (op cons) (reg val) (reg argl))
+  (test (op primitive-procedure?) (reg proc))
+  (branch (label primitive-branch7))
+ compiled-branch8
+  (assign continue (label after-call9))
+  (assign val (op compiled-procedure-entry) (reg proc))
+  (goto (reg val))
+ primitive-branch7
+  (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
+ after-call9
+  (restore env)
+  (restore continue)
+  (test (op false?) (reg val))
+  (branch (label false-branch5))
+ true-branch4
+  (assign proc (op lookup-variable-value) (const =) (reg env))
+  (assign val (const 2))
+  (assign argl (op list) (reg val))
+  (assign val (const 1))
+  (assign argl (op cons) (reg val) (reg argl))
+  (test (op primitive-procedure?) (reg proc))
+  (branch (label primitive-branch10))
+ compiled-branch11
+  (assign val (op compiled-procedure-entry) (reg proc))
+  (goto (reg val))
+ primitive-branch10
+  (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
+  (goto (reg continue))
+ after-call12
+ false-branch5
+  (save continue)
+  (save env)
+  (assign proc (op lookup-variable-value) (const <) (reg env))
+  (assign val (const 3))
+  (assign argl (op list) (reg val))
+  (assign val (const 5))
+  (assign argl (op cons) (reg val) (reg argl))
+  (test (op primitive-procedure?) (reg proc))
+  (branch (label primitive-branch16))
+ compiled-branch17
+  (assign continue (label after-call18))
+  (assign val (op compiled-procedure-entry) (reg proc))
+  (goto (reg val))
+ primitive-branch16
+  (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
+ after-call18
+  (restore env)
+  (restore continue)
+  (test (op false?) (reg val))
+  (branch (label false-branch14))
+ true-branch13
+  (assign proc (op lookup-variable-value) (const <) (reg env))
+  (assign val (const 3))
+  (assign argl (op list) (reg val))
+  (assign val (const 5))
+  (assign argl (op cons) (reg val) (reg argl))
+  (test (op primitive-procedure?) (reg proc))
+  (branch (label primitive-branch19))
+ compiled-branch20
+  (assign val (op compiled-procedure-entry) (reg proc))
+  (goto (reg val))
+ primitive-branch19
+  (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
+  (goto (reg continue))
+ after-call21
+ false-branch14
+  (assign val (const 12))
+  (test (op false?) (reg val))
+  (branch (label false-branch23))
+ true-branch22
+  (assign val (const 12))
+  (goto (reg continue))
+ false-branch23
+  (assign val (const #f))
+  (test (op false?) (reg val))
+  (branch (label false-branch26))
+ true-branch25
+  (assign val (const #f))
+  (goto (reg continue))
+ false-branch26
+  (assign val (const #f))
+  (goto (reg continue))
+ after-if27
+ after-if24
+ after-if15
+ after-if6
+ after-if3
+ )
+)

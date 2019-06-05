@@ -1,0 +1,76 @@
+HW 10 Notes - Endy Iskandar Imam
+================================
+
+  Even to now, I still have little to no idea about how the little functions of
+linkages and preserving with the compiler work when in action. Conceptually, I
+get the purpose and I can imagine how it hypothetically work, when actually
+using the compiler, I have no idea what kind of input attribute to specific
+outputs and it attributed to the grand scheme of thing - no pun intended - such
+as s450 and how each of the individual components attributes to not only how the
+code is structured but also how it flows through the program.
+
+  Nonetheless, designing the conversion of let to lambda along with or to if is
+straightforward as for let special-form, it is equivalent to the lambda
+expression from the conversion below:
+
+  (let ((var1 init1) (var2 init2)) body)
+  => ((lambda (var1 var2) body) init1 init2)
+
+while the or "special-form" is equivalent to the if special-form from the
+conversion below:
+
+  (or p ...)   =>  (if p p (or ...))
+
+and is all done within the underlying scheme and the purpose of the procedures
+let->appl and or->if is to take in the expression and output its equivalent for
+the compiler to compile like usual.
+
+  As for the s450.scm, I try to take it easy first by listing off the primitive
+procedures to the eceval-support.scm, but eventually, I have to take on
+programming apply and map.
+  So the first thing I took on is the apply special-form and the thing I do is
+to take structural borrowing of compile application. And while I have been
+struggling on the operand code interpretation, it turns out that application has
+its arguments in a list, and thus there's no extra processing in the list
+required before compiling the procedure call like normal and it works as if it
+is like a normal procedure application.
+
+  The map procedure took me a while and the way I approached this is have some
+sort of a base assembly definition as I set under the assumption that given a
+procedure in proc register and the list in unev register, output the mapped
+value to val. And this is the equivalent assembly I made:
+
+    (save continue)
+    (assign temp1 (const ()))
+    (assign unev (op reverse) (reg unev))
+    (assign continue (label map-push))
+  map-cond
+    (test (op null?) (reg unev))
+    (branch (label map-return))
+    (assign argl (op car) (reg unev))
+    (assign unev (op cdr) (reg unev))
+    <compile-procedure-call>
+  map-push
+    (assign temp1 (op cons) (reg val) (reg temp1))
+    (goto (label map-cond))
+  map-return
+    (restore continue)
+    (assign val (reg temp1))
+
+  Hypothetically, this uses unev as a stack to sift through the members in the
+list and put the individual member in the stack to be applied to val and pushed
+into temp1 to transport to val once unev is empty.
+
+  There were many issues in the process as I try to figure out the preserving
+pattern and where to call procedure but I then realized that early on that when
+going into the procedure in compiler is where the proc got edited in the process
+so I have to use temp2 as a procedure holder and restore proc from temp2 every
+time it goes to another member in the list. And speaking of procedure, the
+argument for those have to be a list because if args is not a list, the program
+will halt as a result so I have to encase that argl into a list before doing the
+evaluation.
+  Other than that, trying to do on some test at least with what I can concoct
+seems to work as I hoped it would.
+
+  When I tried to run s450, it works like normal but for what I put myself into,
+recursion just breaks it and I honestly have no idea why it's such a case.

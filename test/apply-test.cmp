@@ -1,0 +1,70 @@
+((env continue)
+ (env proc argl unev continue temp1 temp2 val)
+ (proc argl val)
+ (
+  (assign val (op make-compiled-procedure) (label entry1) (reg env))
+  (goto (label after-lambda2))
+ entry1
+  (assign env (op compiled-procedure-env) (reg proc))
+  (assign env (op extend-environment) (const (a b c d)) (reg argl) (reg env))
+  (assign proc (op lookup-variable-value) (const list) (reg env))
+  (assign val (op lookup-variable-value) (const a) (reg env))
+  (assign argl (op list) (reg val))
+  (assign val (op lookup-variable-value) (const b) (reg env))
+  (assign argl (op cons) (reg val) (reg argl))
+  (assign val (op lookup-variable-value) (const c) (reg env))
+  (assign argl (op cons) (reg val) (reg argl))
+  (assign val (op lookup-variable-value) (const d) (reg env))
+  (assign argl (op cons) (reg val) (reg argl))
+  (test (op primitive-procedure?) (reg proc))
+  (branch (label primitive-branch3))
+ compiled-branch4
+  (assign val (op compiled-procedure-entry) (reg proc))
+  (goto (reg val))
+ primitive-branch3
+  (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
+  (goto (reg continue))
+ after-call5
+ after-lambda2
+  (perform (op define-variable!) (const mult-func) (reg val) (reg env))
+  (assign val (const mult-func))
+  (assign val (op make-compiled-procedure) (label entry6) (reg env))
+  (goto (label after-lambda7))
+ entry6
+  (assign env (op compiled-procedure-env) (reg proc))
+  (assign env (op extend-environment) (const ()) (reg argl) (reg env))
+  (assign val (const (1 2 3 4)))
+  (goto (reg continue))
+ after-lambda7
+  (perform (op define-variable!) (const my-args) (reg val) (reg env))
+  (assign val (const my-args))
+  (assign proc (op lookup-variable-value) (const mult-func) (reg env))
+  (save continue)
+  (save proc)
+  (assign proc (op lookup-variable-value) (const my-args) (reg env))
+  (assign argl (const ()))
+  (test (op primitive-procedure?) (reg proc))
+  (branch (label primitive-branch8))
+ compiled-branch9
+  (assign continue (label proc-return11))
+  (assign val (op compiled-procedure-entry) (reg proc))
+  (goto (reg val))
+ proc-return11
+  (assign argl (reg val))
+  (goto (label after-call10))
+ primitive-branch8
+  (assign argl (op apply-primitive-procedure) (reg proc) (reg argl))
+ after-call10
+  (restore proc)
+  (restore continue)
+  (test (op primitive-procedure?) (reg proc))
+  (branch (label primitive-branch12))
+ compiled-branch13
+  (assign val (op compiled-procedure-entry) (reg proc))
+  (goto (reg val))
+ primitive-branch12
+  (assign val (op apply-primitive-procedure) (reg proc) (reg argl))
+  (goto (reg continue))
+ after-call14
+ )
+)

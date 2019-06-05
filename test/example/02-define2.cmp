@@ -1,0 +1,13 @@
+((env continue)
+ (val)
+ (val)
+ (
+  (assign val (const 3))
+  (perform (op define-variable!) (const a) (reg val) (reg env))
+  (assign val (const a))
+  (assign val (op lookup-variable-value) (const a) (reg env))
+  (perform (op define-variable!) (const b) (reg val) (reg env))
+  (assign val (const b))
+  (goto (reg continue))
+ )
+)

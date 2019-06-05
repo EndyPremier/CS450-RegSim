@@ -1,0 +1,10 @@
+((env continue)
+ (val)
+ (val)
+ (
+  (assign val (const 3))
+  (perform (op define-variable!) (const a) (reg val) (reg env))
+  (assign val (const a))
+  (goto (reg continue))
+ )
+)

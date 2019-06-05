@@ -1,0 +1,146 @@
+HOMEWORK 9 NOTES - Endy Iskandar Imam
+=====================================
+
+  Approaching the assignment for me is mostly on reading and trying the code be-
+forehand in an obsessive matter to ensure that the little details makes sense to
+me, and usually that take me days to figure out the individual pieces and even
+then, I might not be 100% certain and I often backtrack to see where part of the
+code comes from.
+  Luckily for question 3 to 5, it gives me the best avenue to check out what the
+code can do and how it deals with the meta-circular evaluation of recursive and
+iterative evaluation.
+
+So without editing the code at all, evaluating the iterative factorial procedure:
+
+  (define (fact-i n)
+    (define (iter product counter)
+      (if (> counter n)
+          product
+          (iter (* counter product)
+                (+ counter 1) )))
+    (iter 1 1) )
+
+even with a rudimentary and primitive procedure, there exists some interesting
+observation that shows the advantage of the primitive procedure.
+  One thing to notice when incrementing n from 1 to infinite, the max depth re-
+quired to evaluate n! is independent of n and it only reaches a depth of 10
+while the amount of pushes in terms of n >= 1 is in a linear equation of 35n +
+29 pushes.
+  This constant depth of 10 is attributed to the tail-recursive definition of
+ev-sequence where it assigned the first expression of the unevaluated sequence
+register to the expression register before checking if its the last expression
+in the sequence so exp can be evaluated first before continuing the sequence,
+keeping the stack depth to the desired limit.
+
+  This only applies to the iterative procedure where all of the house-cleaning
+is done before recursing on itself. Recursive (or specifically head-recursive)
+won't have the same treatment regardless if the ev-sequence is tail or head-
+recursive - as I will mention more soon. As for now, evaluating the recursive
+version of factorial:
+
+  (define (fact-r n)
+    (if (= n 1)
+        1
+        (* (fact-r (- n 1)) n) ))
+
+returns a different pattern as the head-recursive nature of fact-r doesn't reap
+the benefit of the tail-recursive sequence as it's processing inside another
+procedure (basically an applicative-order) and thus the max depth is linear
+along with the push count as n increases.
+  Thus, in terms of n >= 1, the total amount of pushes for the recursion version
+of n! is 32n - 16 while the max depth is 5n + 3. And here is the table for
+comparison.
+
+          | max-depth | push-count
+  --------+-----------+------------
+   fact-r |  5n +  3  |  32n - 16
+  --------+-----------+------------
+   fact-i |       10  |  35n + 29
+
+
+  As mentioned before, the tail-recursion evaluation sequence of expression
+before allows a potential of saving memory space if tail-recursion permits it.
+If the test on the unev was done beforehand, the iterative version doesn't gain
+that benefit of a constant max-stack, as shown on the table before of the max
+depth and the push count for the two version of factorial for head recursion
+sequence in terms of n:
+
+          | max-depth | push-count
+  --------+-----------+------------
+   fact-r |  8n +  3  |  34n - 16
+  --------+-----------+------------
+   fact-i |  3n + 14  |  37n + 33
+
+
+  For the actual programming, I start working on trying to figure out how to
+create a dedicated version of the cond evaluation in eceval, I figure through
+the supposed evaluation of the condition with checking the individual clauses,
+evaluating the predicate and output the action of the predicate is true.
+  There are also some edge cases such as the else clause where it must be the
+final clause and must have an action associated with it, otherwise, it must
+output an error. Other edge cases are where the clause has a true predicate but
+has no clause, thus just output #t while if there are no clauses with a true
+predicate and there is no else clauses, that has to output #f. One more
+interesting case is that a cond special-form and has no clauses can still
+properly evaluate but only evaluated to false.
+  Some few other things I did was create some few extra procedures in syntax.scm
+with cond-empty? checks if the condition has empty clauses, cond-curr-clause
+checks the car of the list of clauses while cond-next-clauses checks the cdr of
+the list. This allows the evaluation of the order of clauses is akin to the ev-
+sequence where the current clauses are at the exp for evaluation while the
+remaining clauses are at the unev. One thing I do have trouble was remembering
+to push the registers to stack because not taking consideration might return
+some odd values without realizing, as with some cases with dealing with unev.
+For the individual clauses, it acts more like ev-if as it has to push the
+required registers to stacks before evaluating the predicate to val where that
+will be used to test-branch to ev-cond-action to output the action associated to
+the predicate.
+  One more key sense of frustration was when evaluating the action because the
+action is actually a list so I have to case that into a begin so it can be
+evaluated like a begin special form, thus working with these tests:
+
+  (cond)
+  (cond ((= 1 2) 1))
+  (cond (#t))
+  (cond (else))
+  (cond (else 'done))
+  (cond (else 'nope)
+        (crash it))
+  (cond ((= 1 2) 3)
+        ((> 4 5) 6)
+        ((< 7 8) 'is 'done)
+        (else 9) )
+
+In order, this should evaluate to #f, #f, #t, error, 'done, error, 'done.
+
+  
+  For the data-driven case, I decided for the sake of convenience, I created a
+new register called eval-type that holds the type-of the expression and then the
+reference of the associated eval type.
+  Luckily throughout the last homework, I already developed the list of label
+references along with the direct access to the instruction table so grabbing the
+specific instructions requires grabbing the references inside the machine.
+  I then created a table called special-table that holds the tag on the car and
+the instruction list associated to the given label in eceval with type-of
+grabbing the tag while the get-tag-label gets the actual instruction-list
+associated with the tag.
+  I then added the eval-type to get the type-of of the expression reg while also
+use get-tag-label from said tag, and the eval-type register is used in a goto -
+not a branch so I have to branch to where that goto is if eval-type outputs
+something other than false.
+
+  Finally, the list below is the conversion from the list of special form to the
+form to install-special-form:
+
+  condition   | tag    | label
+  ------------+--------+---------------
+  quoted?     | quote  | ev-quoted
+  assignment? | set    | ev-assignment
+  definition? | define | ev-definition
+  if?         | if     | ev-if
+  cond?       | cond   | ev-cond
+  lambda?     | lambda | ev-lambda
+  begin?      | begin  | ev-begin
+
+with the condition on the old eval-dispatch tied to a tag be the car of the
+special table while the label is where it goes to for the given tag.

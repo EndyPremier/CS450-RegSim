@@ -1,0 +1,132 @@
+HOMEWORK 8 NOTES - Endy Iskandar Imam
+=====================================
+
+  Getting to the point: The assignment is a lot easier than what it seems at
+face value as the big hurdle is at the start – reading through the documentation
+and seeing how the assembly code simulation work and see how the pieces work.
+  So much of my time was typically spent on initially reading just the code and
+while the comments are useful, reading through the individual procedures and
+seeing how they are connected with the empty lambdas are very vague and trying
+to connect it from procedure to procedure often got me lost with constantly
+backtracking myself, and it only took me reading through the entirety of Chapter
+5.2 on the book is when I finally got a sufficient understanding to work on the
+assignment at hand.
+  One of the key things I took extensive time trying to figure out is how the
+assembly and the program runtime works. With the assembly, I was figuring out
+what was the purpose of the receive argument for the extract-label.
+  It is straightforward enough with reading through the controller text, but it
+only took me a while to realize the receive is where the actual table is at –
+which frankly, I found it profoundly weird that that list of labels are local
+variables in the machine but rather part of the instruction execution, and this
+confusion is more emboldened when actually working on the breakpoints – which I
+will explain down the line.
+  The label entry for the make-label-entry does feel weird dumping the part of
+the instruction as the label’s definition, but when in execution, it makes a lot
+of sense for some of the assembly instructions.
+  As for the empty lambdas, that’s for the purpose of delayed evaluation for the
+actual execution runtime when you call (start <machine>) and those procedure
+objects are tied to a line in the assembled instruction that is interpreted with
+the update-insts! and make-execution-procedure to be the “machine code,” which
+are the lambdas tied to the instruction in the machine.
+  And importantly with all the value passing with the instructions, labels, the
+machine, registers, etc. are where the lambdas will be utilizing. Assigns modify
+the register’s values in the machine given the instruction, test is for changing
+true or false on the flag for branch to goto a label given the labels table to
+modify the pc, save and restore is for the stack, and perform just take the
+instruction and simulate the action in the line.
+  One key thing is that for assign, test, save, restore, and perform always end
+the lambda procedure with (advance-pc pc) to push the pc to the next line while
+branch and goto have pc be replaced with the instruction list associated to the
+given label.
+
+  With that clarity out of the way, the primary thing I worked on was on
+Exercise 5.19 of setting breakpoints on the machine. As I mentioned, the
+instruction list is void of labels and the label list is in the lambda of the
+instruction, so instead of trying to tack in breakpoints by tagging onto the
+instruction list, I instead add the line numbers (starting from 1) before the
+instruction text so an individual line in the instruction list is in this form:
+
+    (<line-num> <text-instruction> <lambda>)
+
+  And this form is shared not only in the local machine but also in the lambda
+for the individual instruction so reading through the pc and finding the
+breakpoint is as simple as checking the line number in a breakpoint table during
+individual execution of a line.
+  This however mean the execution evaluation as instruction text is not in the
+car of the instruction line anymore but in the cdar, but at least it only a few
+fixes at the section of make-instruction to restore it to normal use as I only
+add the number to the extract-label to count up when it’s not reading a label.
+  If it is a label, however, that line position – which is where it started –
+will be the value with the label in the key for the external label-table, which
+is important for converting the input label n for the breakpoint to a specific
+point in the instruction so two different labels with two different value can
+point to the same part of the instruction sequence. This label position is
+passed into an allocate-label dispatch to add the label position entry.
+
+  This is the moment where I also use it to address Exercise 5.8 – denying
+duplicates. Using the given example:
+
+    start
+        (goto (label here))
+    here
+        (assign a (const 3))
+        (goto (label there))
+    here
+        (assign a (const 4))
+        (goto (label there))
+    there
+
+if the countermeasure isn’t implemented the assign would output 3, but reading
+the instruction above just makes it confusing on where the here is supposed to
+be exactly. This is where that allocate-label during assembly will not output
+the compiled machine if running through finding the label already existing in
+the table, and if so, an error is outputted.
+
+  To check it’s all working so far, I modified the dispatch to make me see the
+instruction and the label table and that works perfectly normal with the
+examples from the last part.
+
+  Once that is done, that is where the actual programming of the breakpoint
+starts and I thought right away that handing breakpoints should be in the
+machine and be accessed via dispatch with a dedicated breakpoint-table to add
+and delete breakpoints, which the table is just a list of numbers representing a
+line in the instruction sequence, and manipulating it with the procedure is
+exactly like how it’s done with every other procedure in the machine builder in
+general with dispatches of a given machine.
+  Inside that breakpoint is where I need the dispatch of the breakpoint to
+spread its leg to add and delete entries with set and cancel but the big thing
+is with that label-n combo to represent a specific point in the instruction, and
+this is where the line-num-from-label is for.
+  One thing to note is that n has to be greater than 0, otherwise it won’t work
+and spits an error to have n be greater than 0. It also has to check if that
+entry exists, to begin with. And even if that two are checked, it has to find
+the line number equivalent to that combo (being where the label start (the first
+one being at line 1) plus n minus 1 to offset that start label. If that number
+is outside that length of the instruction sequence, that also causes an error.
+  Once that is defined, that position number conversion is used for the set and
+cancel breakpoint defined within the machine to interact with the table. For
+set, I have to check if the value is already in the entry and spit that error
+that to forbid duplicated breakpoint for the same line, whereas cancel
+breakpoint is just streaming through the list of unique numbers to find and
+delete, and have it be redefined to the breakpoint-table. Clearing the
+breakpoint just simply set! the table to be an empty list.
+  And ensuring it works, I added another dispatch at the breakpoint to take in
+symbol ‘list to output the breakpoint-table.
+  And for the actual execution, I add a check for if the line is in the
+breakpoint table (basically looking at the line number on the instruction) and
+just output ‘break, and if not, just execute like normal. Note that accessing
+execute procedure is impossible via dispatch and start only restarts the machine
+while the new dispatch, proceed continues from where the pc is at and returns to
+the execution loop before it finishes or hits another breakpoint. And it’s nice
+to know that at the breakpoint, you can still check and modify registers along
+with modifying the registers as desired.
+
+  I then diverted to exercise 5.9 as I still got some time, of modifying the
+lookup-machine-primitive (lookup-prim in the textbook) and one thing to note
+that the only place that it’s used at all is the make-operation-exp for
+operations, so I modify the exp in the let variable to not have the operation-
+exp-op procedure to tag in to have a full knowledge of if it’s a label or not,
+and just simply modify the actual lookup-machine-primitive to check if that
+expression list has the label tag along with the val assoc (with an extraction
+of operation-exp-op as if from make-operation-exp before) so it acts like normal
+with a difference that if it’s a label, an error is outputted.
